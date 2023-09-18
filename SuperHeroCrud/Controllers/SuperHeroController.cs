@@ -18,20 +18,35 @@ namespace SuperHeroCrud.Controllers
         }
         
         [HttpGet]
-        public async Task<ActionResult<List<SuperHero>>> GetAllSuperHeroes()
+        public async Task<ActionResult<List<SuperHeroes>>> GetAllSuperHeroes()
         {
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConn"));
-            var heroes = await connection.QueryAsync<SuperHero>("select * from superheroes");
+            IEnumerable<SuperHeroes> heroes = await SelectAllHeroes(connection);
             return Ok(heroes);
         }
 
+        
+
         [HttpGet("{heroId}")]
-        public async Task<ActionResult<SuperHero>> GetSuperHero(int heroId)
+        public async Task<ActionResult<SuperHeroes>> GetSuperHero(int heroId)
         {
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConn"));
-            var hero = await connection.QueryFirstAsync<SuperHero>("select * from superheroes where id = @Id", 
+            var hero = await connection.QueryFirstAsync<SuperHeroes>("select * from superheroes where id = @Id", 
                 new { Id = heroId} );
             return Ok(hero);
         }
+        private static async Task<IEnumerable<SuperHeroes>> SelectAllHeroes(SqlConnection connection)
+        {
+            return await connection.QueryAsync<SuperHeroes>("select * from superheroes");
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<List<SuperHeroes>>> CreateSuperHero(SuperHeroes hero)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConn"));
+            await connection.ExecuteAsync("insert into superheroes(name, firstname, lastname, place) values (@Name, @FirstName, @LastName, @Place)", hero);
+            return Ok(await SelectAllHeroes(connection));
+        }
+
     }
 }
